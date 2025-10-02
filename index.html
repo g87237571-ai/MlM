@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>mlm</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            padding: 0;
+            background: var(--tg-theme-bg-color, #4d4141);
+            color: var(--tg-theme-text-color, #ffffff);
+        }
+        .screen {
+            display: none;
+            padding: 15px;
+            padding-bottom: 60px; /* Space for navigation */
+        }
+        .active {
+            display: block;
+        }
+        .header {
+            text-align: center;
+            padding: 10px;
+            margin-bottom: 15px;
+        }
+        #clickButton {
+            background: var(--tg-theme-button-color, #ffd000);
+            color: var(--tg-theme-button-text-color, #000000);
+            border: none;
+            border-radius: 50%;
+            width: 140px;
+            height: 140px;
+            font-size: 18px;
+            margin: 20px auto;
+            display: block;
+            cursor: pointer;
+        }
+        .upgrade {
+            background: var(--tg-theme-section-bg-color, #4d4141);
+            margin: 1px 0;
+            padding: 1px;
+            border-radius: 1px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--tg-theme-bg-color,#4d4141 );
+            display: flex;
+            border-top: 1px solid #000000;
+        }
+        .nav-btn {
+            flex: 1;
+            background: none;
+            border: none;
+            padding: 12px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <!-- Main Game Screen -->
+    <div id="gameScreen" class="screen active">
+        <div class="header">
+            <h2> <span id="balance">0</span> mlm</h2>
+        </div>
+        <button id="clickButton">mlm</button>
+        
+        <h3></h3>
+        <div id="clickUpgrades"></div>
+    </div>
+
+    <!-- Empty Tab 1 -->
+    <div id="upgradesScreen" class="screen">
+        <div class="header">
+            <h2>Пассивный доход</h2>
+        </div>
+        <div id="businessUpgrades">
+            <p>Здесь будут бизнесы, приносящие пассивный доход.</p>
+        </div>
+    </div>
+
+    <!-- Empty Tab 2 -->
+    <div id="statsScreen" class="screen">
+        <div class="header">
+            <h2>Статистика</h2>
+        </div>
+        <p>Здесь будет статистика вашей игры.</p>
+    </div>
+
+    <!-- Empty Tab 3 -->
+    <div id="friendsScreen" class="screen">
+        <div class="header">
+            <h2>Друзья</h2>
+        </div>
+        <p>Здесь будет реферальная система.</p>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav>
+        <button class="nav-btn" onclick="showScreen('gameScreen')">Игра</button>
+        <button class="nav-btn" onclick="showScreen('upgradesScreen')">Бизнес</button>
+        <button class="nav-btn" onclick="showScreen('statsScreen')">Статистика</button>
+        <button class="nav-btn" onclick="showScreen('friendsScreen')">Друзья</button>
+    </nav>
+
+    <script>
+        // Initialize Telegram Mini App
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+
+        // Game State
+        let gameState = {
+            balance: 100,
+            clickPower: 1,
+            upgrades: [
+                { id: 1, name: "1", level: 1, power: 1, cost: 50 },
+                { id: 2, name: "2", level: 0, power: 2, cost: 200 },
+                { id: 3, name: "3", level: 0, power: 5, cost: 1000 }
+            ]
+        };
+
+        // Load saved game
+        function loadGame() {
+            const saved = localStorage.getItem('clickerSave');
+            if (saved) gameState = JSON.parse(saved);
+            updateUI();
+        }
+
+        // Update interface
+        function updateUI() {
+            document.getElementById('balance').textContent = gameState.balance;
+            renderUpgrades();
+        }
+
+        // Render upgrades list
+        function renderUpgrades() {
+            const container = document.getElementById('clickUpgrades');
+            container.innerHTML = gameState.upgrades.map(upgrade => `
+                <div class="upgrade">
+                    <div>
+                        <h4>${upgrade.name}</h4>
+                        <div>Уровень: ${upgrade.level}</div>
+                        <div>+${upgrade.power} за клик</div>
+                    </div>
+                    <button onclick="buyUpgrade(${upgrade.id})" 
+                            ${gameState.balance < upgrade.cost ? 'disabled' : ''}>
+                        ${upgrade.cost} mlm
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // Handle click
+        document.getElementById('clickButton').addEventListener('click', () => {
+            gameState.balance += gameState.clickPower;
+            updateUI();
+            saveGame();
+        });
+
+        // Buy upgrade
+        function buyUpgrade(id) {
+            const upgrade = gameState.upgrades.find(u => u.id === id);
+            if (gameState.balance >= upgrade.cost) {
+                gameState.balance -= upgrade.cost;
+                upgrade.level++;
+                gameState.clickPower += upgrade.power;
+                upgrade.cost = Math.round(upgrade.cost * 1.8);
+                updateUI();
+                saveGame();
+            }
+        }
+
+        // Navigation
+        function showScreen(screenName) {
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            document.getElementById(screenName).classList.add('active');
+        }
+
+        // Save game
+        function saveGame() {
+            localStorage.setItem('clickerSave', JSON.stringify(gameState));
+        }
+
+        // Start the game
+        loadGame();
+    </script>
+</body>
+</html>
